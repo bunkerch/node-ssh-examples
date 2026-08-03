@@ -1,0 +1,5 @@
+{
+  "library": "@bunkerch/modernssh",
+  "example": "read-only-sftp",
+  "writable": false
+}
