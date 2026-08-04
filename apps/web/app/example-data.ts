@@ -9,7 +9,6 @@ export interface ExampleData {
   port: string
   auth: string
   commands: readonly { label: string; value: string }[]
-  features: readonly string[]
   code: string
   note?: string
 }
@@ -205,49 +204,44 @@ export function getExamples(): readonly ExampleData[] {
   const helloPort = environment("HELLO_SSH_PORT", "2222")
   const sftpPort = environment("SFTP_SSH_PORT", "2223")
   const keysPort = environment("KEYS_SSH_PORT", "2224")
-  const none = "-o PreferredAuthentications=none -o PubkeyAuthentication=no"
-
   return [
     {
       id: "hello",
       index: "01",
       shortTitle: "Hello server",
-      title: "Hello, then goodbye.",
-      description: "A minimal SSH server that accepts anonymous connections, writes one message, and closes cleanly.",
+      title: "Hello SSH server",
+      description: "Accepts an anonymous SSH connection, writes one message, and closes it.",
       port: helloPort,
       auth: "none",
-      commands: [{ label: "Connect", value: `ssh ${none} -p ${helloPort} ${username}@${domain}` }],
-      features: ["Anonymous none authentication", "Session channels only", "Clean exit status and disconnect"],
+      commands: [{ label: "Connect", value: `ssh -p ${helloPort} ${username}@${domain}` }],
       code: helloCode,
     },
     {
       id: "sftp",
       index: "02",
       shortTitle: "Read-only SFTP",
-      title: "Files in, writes out.",
-      description: "A read-only SFTP v3 server with downloadable sample files and an intentionally tiny attack surface.",
+      title: "Read-only SFTP server",
+      description: "Serves sample files over SFTP and rejects write operations.",
       port: sftpPort,
       auth: "none",
       commands: [
-        { label: "Browse", value: `sftp ${none} -P ${sftpPort} ${username}@${domain}` },
-        { label: "Download", value: `sftp ${none} -P ${sftpPort} ${username}@${domain}:/hello.txt ./hello.txt` },
+        { label: "Browse", value: `sftp -P ${sftpPort} ${username}@${domain}` },
+        { label: "Download", value: `sftp -P ${sftpPort} ${username}@${domain}:/hello.txt ./hello.txt` },
       ],
-      features: ["Anonymous none authentication", "Read and directory operations", "Every mutation denied"],
       code: sftpCode,
     },
     {
       id: "keys",
       index: "03",
       shortTitle: "Public-key mirror",
-      title: "See what your agent offers.",
-      description: "Lists unsigned public-key offers from your SSH client without ever asking your agent or password manager to sign.",
+      title: "Public-key listing server",
+      description: "Lists unsigned public-key offers without asking your agent or password manager to sign.",
       port: keysPort,
       auth: "anonymous fallback",
       commands: [
         { label: "Inspect your agent", value: `ssh -p ${keysPort} ${username}@${domain}` },
         { label: "Offer one key", value: `ssh -o IdentitiesOnly=yes -i ~/.ssh/id_ed25519 -p ${keysPort} ${username}@${domain}` },
       ],
-      features: ["Collects unsigned key probes", "Never requests a signature", "Prompt-free anonymous fallback"],
       code: keysCode,
       note: "OpenSSH sends none before public keys and never retries it. This server rejects that discovery request, records each unsigned key probe, and admits the later keyboard-interactive request without presenting a prompt.",
     },

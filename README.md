@@ -56,8 +56,8 @@ pnpm dev
 Then try:
 
 ```sh
-ssh -o PreferredAuthentications=none -o PubkeyAuthentication=no -p 2222 demo@localhost
-sftp -o PreferredAuthentications=none -o PubkeyAuthentication=no -P 2223 demo@localhost
+ssh -p 2222 demo@localhost
+sftp -P 2223 demo@localhost
 ssh -p 2224 demo@localhost
 ```
 
