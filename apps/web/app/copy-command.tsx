@@ -13,6 +13,7 @@ export function CopyCommand({ command }: Readonly<{ command: string }>) {
 
   return (
     <div className="command-row">
+      <span className="prompt" aria-hidden="true">$</span>
       <code>{command}</code>
       <button type="button" onClick={() => void copy()} aria-label={`Copy command: ${command}`}>
         {copied ? "Copied" : "Copy"}

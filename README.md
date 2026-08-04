@@ -11,7 +11,11 @@ commands.
 | `hello-server` | 2222 | `none` | Prints the requested greeting and closes the session. |
 | `readonly-sftp` | 2223 | `none` | Serves the bundled `assets/` tree over read-only SFTP. |
 | `key-list-server` | 2224 | anonymous fallback | Prints unsigned keys offered by the client. |
-| `web` | 3000 | n/a | Shows ports and copyable SSH/SFTP commands using Vinext. |
+| `web` | 3000 | n/a | Vinext overview and detail pages with commands and highlighted source. |
+
+The web app has a neutral component-style interface and a dedicated page for each server at
+`/hello`, `/sftp`, and `/keys`. Each detail page includes live connection commands, behavior notes,
+and a minimal runnable TypeScript implementation highlighted with PrismJS.
 
 OpenSSH sends an initial `none` discovery request before it offers public keys and does not retry
 `none` afterward. The key-list server rejects that first request, records and rejects every unsigned
