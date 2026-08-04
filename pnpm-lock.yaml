@@ -46,6 +46,16 @@ importers:
         specifier: ^4.20.5
         version: 4.23.5
 
+  apps/tty-server:
+    dependencies:
+      '@bunkerch/modernssh':
+        specifier: ^1.0.1
+        version: 1.0.1
+    devDependencies:
+      tsx:
+        specifier: ^4.20.5
+        version: 4.23.5
+
   apps/web:
     dependencies:
       prismjs:

@@ -11,11 +11,12 @@ commands.
 | `hello-server` | 2222 | `none` | Prints the requested greeting and closes the session. |
 | `readonly-sftp` | 2223 | `none` | Serves the bundled `assets/` tree over read-only SFTP. |
 | `key-list-server` | 2224 | anonymous fallback | Prints unsigned keys offered by the client. |
+| `tty-server` | 2225 | `none` | Draws a colored frame and handles terminal resizes. |
 | `web` | 3000 | n/a | Vinext overview and detail pages with commands and highlighted source. |
 
 The web app has a neutral component-style interface and a dedicated page for each server at
-`/hello`, `/sftp`, and `/keys`. Each detail page includes live connection commands, behavior notes,
-and a minimal runnable TypeScript implementation highlighted with PrismJS.
+`/hello`, `/sftp`, `/keys`, and `/tty`. Each detail page includes live connection commands, source,
+and any necessary protocol note. Minimal TypeScript implementations are highlighted with PrismJS.
 
 OpenSSH sends an initial `none` discovery request before it offers public keys and does not retry
 `none` afterward. The key-list server rejects that first request, records and rejects every unsigned
@@ -59,6 +60,7 @@ Then try:
 ssh -p 2222 demo@localhost
 sftp -P 2223 demo@localhost
 ssh -p 2224 demo@localhost
+ssh -t -p 2225 demo@localhost
 ```
 
 The username is deliberately ignored by every example. The key-list server intentionally performs
@@ -84,6 +86,7 @@ The web app reads its values at request time, so its image can be configured aft
 | `HELLO_SSH_PORT` | `2222` |
 | `SFTP_SSH_PORT` | `2223` |
 | `KEYS_SSH_PORT` | `2224` |
+| `TTY_SSH_PORT` | `2225` |
 | `SSH_USERNAME` | `demo` |
 | `HOST` / `PORT` | `0.0.0.0` / `3000` |
 
@@ -96,6 +99,7 @@ file:
 docker build -f apps/hello-server/Dockerfile -t modernssh-hello .
 docker build -f apps/readonly-sftp/Dockerfile -t modernssh-sftp .
 docker build -f apps/key-list-server/Dockerfile -t modernssh-keys .
+docker build -f apps/tty-server/Dockerfile -t modernssh-tty .
 docker build -f apps/web/Dockerfile -t modernssh-web .
 ```
 

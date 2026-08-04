@@ -1,4 +1,4 @@
-export type ExampleId = "hello" | "sftp" | "keys"
+export type ExampleId = "hello" | "sftp" | "keys" | "tty"
 
 export interface ExampleData {
   id: ExampleId
@@ -198,12 +198,95 @@ server.on("connection", (connection) => {
 
 server.listen({ host: "0.0.0.0", port: Number(process.env.PORT ?? 2224) })`
 
+const ttyCode = String.raw`import { once } from "node:events"
+import { Server, SessionChannel, type SessionWindowDimensions } from "@bunkerch/modernssh"
+
+const hostKey = process.env.SSH_HOST_KEY_PRIVATE_KEY
+if (!hostKey) throw new Error("SSH_HOST_KEY_PRIVATE_KEY is required")
+
+const esc = "\u001b["
+
+function frame({ columns, rows }: Readonly<SessionWindowDimensions>): string {
+  if (columns < 36 || rows < 12) return esc + "2J" + esc + "HResize to at least 36 × 12."
+
+  const width = Math.min(columns, 72)
+  const inner = width - 2
+  const line = (text = "", color = "") => {
+    const clipped = text.slice(0, inner)
+    const centered = clipped.padStart(Math.floor((inner + clipped.length) / 2)).padEnd(inner)
+    return "│" + color + centered + "\u001b[0m│"
+  }
+
+  return esc + "H" + [
+    "╭" + "─".repeat(inner) + "╮",
+    line("modernssh TTY", "\u001b[1;35m"),
+    line(),
+    line("Resize the window and this frame will follow."),
+    line(columns + " columns × " + rows + " rows"),
+    line(),
+    line("Press q or Ctrl-C to disconnect"),
+    "╰" + "─".repeat(inner) + "╯",
+  ].join("\r\n") + esc + "J"
+}
+
+const server = new Server({ hostKeys: [hostKey] })
+server.hooker.hook("noneAuthentication", (_hook, _context, decision) => {
+  decision.allowLogin = true
+})
+server.hooker.hook("channelOpenRequest", (_hook, channel, decision) => {
+  decision.allowOpen = channel instanceof SessionChannel
+})
+
+server.on("connection", (connection) => {
+  connection.on("channel", (channel) => {
+    if (!(channel instanceof SessionChannel)) return
+    let dimensions: Readonly<SessionWindowDimensions> | undefined
+    let shell = channel.shell
+
+    channel.hooker.hook("ptyRequest", (_hook, requested, decision) => {
+      dimensions = requested
+      decision.success = true
+    })
+    channel.hooker.hook("shellRequest", (_hook, decision) => {
+      decision.success = true
+    })
+    channel.hooker.hook("windowChange", async (_hook, resized) => {
+      dimensions = resized
+      if (shell) await shell.writeStdout(frame(resized))
+    })
+
+    channel.events.on("shell", (openedShell) => {
+      shell = openedShell
+      if (!channel.pty || !dimensions) {
+        void openedShell.writeStdout("No TTY detected. Reconnect with ssh -t.\n")
+          .then(() => openedShell.exit(1).close())
+        return
+      }
+
+      void openedShell.writeStdout(esc + "?1049h" + esc + "?25l" + frame(dimensions))
+      openedShell.on("data", (data: Buffer) => {
+        if (!data.includes(0x03) && !data.includes(0x71)) return
+        void (async () => {
+          await openedShell.writeStdout(esc + "?25h" + esc + "?1049l")
+          const closed = once(openedShell, "close")
+          openedShell.exit(0).close()
+          await closed
+          await connection.close()
+        })()
+      })
+    })
+  })
+})
+
+server.listen({ host: "0.0.0.0", port: Number(process.env.PORT ?? 2225) })`
+
 export function getExamples(): readonly ExampleData[] {
   const domain = environment("EXAMPLES_DOMAIN", "localhost")
   const username = environment("SSH_USERNAME", "demo")
   const helloPort = environment("HELLO_SSH_PORT", "2222")
   const sftpPort = environment("SFTP_SSH_PORT", "2223")
   const keysPort = environment("KEYS_SSH_PORT", "2224")
+  const ttyPort = environment("TTY_SSH_PORT", "2225")
   return [
     {
       id: "hello",
@@ -244,6 +327,21 @@ export function getExamples(): readonly ExampleData[] {
       ],
       code: keysCode,
       note: "OpenSSH sends none before public keys and never retries it. This server rejects that discovery request, records each unsigned key probe, and admits the later keyboard-interactive request without presenting a prompt.",
+    },
+    {
+      id: "tty",
+      index: "04",
+      shortTitle: "TTY interface",
+      title: "Resizable TTY interface",
+      description: "Draws a colored terminal frame and redraws it when the client window changes size.",
+      port: ttyPort,
+      auth: "none",
+      commands: [
+        { label: "Connect with a TTY", value: `ssh -t -p ${ttyPort} ${username}@${domain}` },
+        { label: "Test without a TTY", value: `ssh -T -p ${ttyPort} ${username}@${domain}` },
+      ],
+      code: ttyCode,
+      note: "Without a PTY allocation the server prints a plain reconnect instruction and closes the session. Use -t to force PTY allocation when stdin is not already a terminal.",
     },
   ]
 }

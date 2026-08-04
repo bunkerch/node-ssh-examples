@@ -3,6 +3,13 @@ import { CopyCommand } from "./copy-command"
 import type { ExampleData } from "./example-data"
 
 export function ExamplePage({ example }: Readonly<{ example: ExampleData }>) {
+  const folders = {
+    hello: "hello-server",
+    sftp: "readonly-sftp",
+    keys: "key-list-server",
+    tty: "tty-server",
+  } as const
+
   return (
     <main className="page-shell example-page">
       <div className="breadcrumbs"><a href="/">Examples</a><span>/</span><span>{example.shortTitle}</span></div>
@@ -36,7 +43,7 @@ export function ExamplePage({ example }: Readonly<{ example: ExampleData }>) {
       <section className="source-section">
         <div className="source-heading">
           <h2>Minimal server</h2>
-          <a href={`https://github.com/bunkerch/node-ssh-examples/tree/master/apps/${example.id === "hello" ? "hello-server" : example.id === "sftp" ? "readonly-sftp" : "key-list-server"}`}>
+          <a href={`https://github.com/bunkerch/node-ssh-examples/tree/master/apps/${folders[example.id]}`}>
             View complete container <span aria-hidden="true">↗</span>
           </a>
         </div>
@@ -47,6 +54,7 @@ export function ExamplePage({ example }: Readonly<{ example: ExampleData }>) {
         <a href="/">← All examples</a>
         {example.id === "hello" ? <a href="/sftp">Next: Read-only SFTP →</a> : null}
         {example.id === "sftp" ? <a href="/keys">Next: Public-key mirror →</a> : null}
+        {example.id === "keys" ? <a href="/tty">Next: TTY interface →</a> : null}
       </nav>
     </main>
   )

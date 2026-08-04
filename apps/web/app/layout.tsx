@@ -15,6 +15,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               <a href="/hello">Hello</a>
               <a href="/sftp">SFTP</a>
               <a href="/keys">Public keys</a>
+              <a href="/tty">TTY</a>
               <a className="nav-github" href="https://github.com/bunkerch/node-ssh-examples">
                 GitHub <span aria-hidden="true">↗</span>
               </a>
