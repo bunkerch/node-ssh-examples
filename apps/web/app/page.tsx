@@ -59,7 +59,7 @@ export default function HomePage() {
       eyebrow: "Know your keys",
       title: "Public-key mirror",
       description:
-        "Records public keys offered during authentication, verifies the selected signature, then prints the observed keys.",
+        "Records every unsigned public key offer without requesting a signature, then admits the session anonymously.",
       accent: "violet",
       port: keysPort,
       commands: [
@@ -116,9 +116,9 @@ export default function HomePage() {
       <aside className="protocol-note">
         <span>Protocol note</span>
         <p>
-          SSH offers authentication keys sequentially and stops after one succeeds. The key mirror
-          can display every key it actually observed before success, but the protocol provides no
-          “all keys” or “last key” marker.
+          OpenSSH sends its initial none request before offering keys and does not retry it. The key
+          mirror rejects that discovery request, collects every unsigned key offer, and then uses a
+          prompt-free keyboard-interactive fallback. Your agent is never asked to sign.
         </p>
       </aside>
 

@@ -15,7 +15,10 @@ interface AdvertisedKey {
 }
 
 const advertisedKeys = new WeakMap<ServerClient, Map<string, AdvertisedKey>>()
-const server = new Server({ hostKeys: [hostKeyFromEnvironment()] })
+const server = new Server({
+  hostKeys: [hostKeyFromEnvironment()],
+  maxAuthenticationAttempts: 256,
+})
 
 function describeKey(publicKey: PublicKey, algorithm: string): AdvertisedKey {
   return {
@@ -26,6 +29,11 @@ function describeKey(publicKey: PublicKey, algorithm: string): AdvertisedKey {
 }
 
 server.on("error", (error) => console.error("SSH server error", error))
+server.hooker.hook("noneAuthentication", (_hook, _context, decision) => {
+  // OpenSSH uses this first request to discover the available authentication methods. Accepting
+  // it would finish authentication before the client has a chance to advertise its public keys.
+  decision.allowLogin = false
+})
 server.hooker.hook("publicKeyAuthentication", (_hook, context, decision, connection) => {
   let keys = advertisedKeys.get(connection)
   if (!keys) {
@@ -35,12 +43,13 @@ server.hooker.hook("publicKeyAuthentication", (_hook, context, decision, connect
 
   const key = describeKey(context.publicKey, context.algorithm)
   keys.set(key.fingerprint, key)
-  if (!context.signature) {
-    decision.requestSignature = true
-    return
-  }
-
-  decision.allowLogin = context.publicKey.verifySignature(context.signatureMessage, context.signature)
+  decision.requestSignature = false
+  decision.allowLogin = false
+})
+server.hooker.hook("keyboardInteractiveAuthentication", (_hook, _context, decision) => {
+  // OpenSSH reaches this method after exhausting its unsigned public-key offers. No prompts or
+  // signatures are requested; keyboard-interactive is only the interoperable anonymous fallback.
+  decision.allowLogin = true
 })
 server.hooker.hook("channelOpenRequest", (_hook, channel, decision) => {
   decision.allowOpen = channel instanceof SessionChannel
@@ -62,7 +71,7 @@ server.on("connection", (connection) => {
     const respond = (shell: Shell): void => {
       const keys = [...(advertisedKeys.get(connection)?.values() ?? [])]
       const lines = [
-        `The client advertised ${keys.length} public key${keys.length === 1 ? "" : "s"} before authentication succeeded.`,
+        `The client advertised ${keys.length} public key${keys.length === 1 ? "" : "s"} before anonymous access was granted.`,
         "",
         ...keys.flatMap((key, index) => [
           `${index + 1}. ${key.algorithm} ${key.fingerprint}`,

@@ -10,13 +10,15 @@ commands.
 | --- | ---: | --- | --- |
 | `hello-server` | 2222 | `none` | Prints the requested greeting and closes the session. |
 | `readonly-sftp` | 2223 | `none` | Serves the bundled `assets/` tree over read-only SFTP. |
-| `key-list-server` | 2224 | public key | Prints keys observed while the client authenticated. |
+| `key-list-server` | 2224 | anonymous fallback | Prints unsigned keys offered by the client. |
 | `web` | 3000 | n/a | Shows ports and copyable SSH/SFTP commands using Vinext. |
 
-The public-key authentication protocol offers keys sequentially and stops after one succeeds. It
-has no marker for “all keys” or “last key,” so `key-list-server` reports every key it actually saw
-before the first correctly signed key was accepted. With a normal OpenSSH client this is commonly
-the accepted key plus any keys rejected before it.
+OpenSSH sends an initial `none` discovery request before it offers public keys and does not retry
+`none` afterward. The key-list server rejects that first request, records and rejects every unsigned
+public-key offer without requesting a signature, then accepts the client's prompt-free
+keyboard-interactive fallback. This lets an ordinary OpenSSH client finish without asking an agent,
+1Password, or a passphrase-protected key to sign anything. The server increases the authentication
+attempt limit to accommodate agents containing many keys.
 
 ## Requirements
 
@@ -55,9 +57,10 @@ sftp -o PreferredAuthentications=none -o PubkeyAuthentication=no -P 2223 demo@lo
 ssh -p 2224 demo@localhost
 ```
 
-The username is deliberately ignored by the two `none`-authentication examples. The key-list
-server accepts any public key only after verifying that the client owns its private key. These
-servers are demonstrations, not production authorization policies.
+The username is deliberately ignored by every example. The key-list server intentionally performs
+no identity verification; it uses keyboard-interactive without prompts only as an interoperable
+anonymous fallback after key enumeration. These servers are demonstrations, not production
+authorization policies.
 
 ## Configuration
 
