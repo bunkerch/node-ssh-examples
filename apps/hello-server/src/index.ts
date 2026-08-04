@@ -3,7 +3,7 @@ import { Server, SessionChannel, type Shell } from "@bunkerch/modernssh"
 import { hostKeyFromEnvironment, listenPort } from "./config.js"
 
 const message =
-  "Hello! This is a simple ssh server using [npm link]! Unfortunately, we do not provide shell access.\n"
+  "Hello! This is a simple ssh server using https://www.npmjs.com/package/@bunkerch/modernssh! Unfortunately, we do not provide shell access.\n"
 const server = new Server({ hostKeys: [hostKeyFromEnvironment()] })
 
 server.on("error", (error) => console.error("SSH server error", error))
